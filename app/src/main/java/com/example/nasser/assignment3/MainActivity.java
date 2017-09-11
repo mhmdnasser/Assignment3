@@ -1,9 +1,13 @@
 package com.example.nasser.assignment3;
 
+import android.app.Activity;
+import android.content.Context;
 import android.content.Intent;
+import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.media.Image;
 import android.net.Uri;
+import android.provider.ContactsContract;
 import android.provider.MediaStore;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -11,37 +15,79 @@ import android.view.View;
 import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.ImageView;
+import android.widget.RadioButton;
+import android.widget.Toast;
 
 public class MainActivity extends AppCompatActivity {
 
-    ImageView imageView ,imageView1;
-    int PICK_IMAGE = 100;
+    ImageView imageView1 ,imageView2;
+    static final int PICK_IMAGE = 100;
+    static final int PICK_CONTACT=3;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
     }
+
+
     public void btnCameraClick(View v )
     {
-        imageView = (ImageView) findViewById(R.id.imageView);
+        imageView1 = (ImageView) findViewById(R.id.imageView);
         Intent myintent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
         startActivityForResult(myintent,0);
     }
-
+    public void openGallery(View v)
+    {
+        imageView2 = (ImageView) findViewById(R.id.imageView);
+        Intent gallery = new Intent(Intent.ACTION_PICK , MediaStore.Images.Media.INTERNAL_CONTENT_URI);
+        startActivityForResult(gallery,PICK_IMAGE);
+    }
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-        Bitmap bitmap =(Bitmap) data.getExtras().get("data");
-        imageView.setImageBitmap(bitmap);
+        switch (requestCode)
+        {
+            case 0 :
+                Bitmap bitmap1 =(Bitmap) data.getExtras().get("data");
+                imageView1.setImageBitmap(bitmap1);
+                break;
+            case PICK_IMAGE :
+                Bitmap bitmap2 =(Bitmap) data.getExtras().get("data");
+                imageView2.setImageBitmap(bitmap2);
+                break;
+            case PICK_CONTACT :
+                if (resultCode == Activity.RESULT_OK) {
+
+                    Uri contactData = data.getData();
+                    Cursor c =  managedQuery(contactData, null, null, null, null);
+                    if (c.moveToFirst()) {
+
+
+                        String id =c.getString(c.getColumnIndexOrThrow(ContactsContract.Contacts._ID));
+
+                        String hasPhone =c.getString(c.getColumnIndex(ContactsContract.Contacts.HAS_PHONE_NUMBER));
+
+                        if (hasPhone.equalsIgnoreCase("1")) {
+                            Cursor phones = getContentResolver().query(
+                                    ContactsContract.CommonDataKinds.Phone.CONTENT_URI,null,
+                                    ContactsContract.CommonDataKinds.Phone.CONTACT_ID +" = "+ id,
+                                    null, null);
+                            phones.moveToFirst();
+                          String  cNumber = phones.getString(phones.getColumnIndex("data"));
+                            System.out.println("number is:"+cNumber);
+                        }
+                        String name = c.getString(c.getColumnIndex(ContactsContract.Contacts.DISPLAY_NAME));
+
+
+                    }
+                }
+                break;
+        }
     }
 
-    public void openGallery(View v)
-    {
-        imageView1 = (ImageView) findViewById(R.id.imageView);
-        Intent gallery = new Intent(Intent.ACTION_PICK , MediaStore.Images.Media.INTERNAL_CONTENT_URI);
-        startActivityForResult(gallery,PICK_IMAGE);
-    }
+
     protected void onActivityResult1(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
         Uri imageuri = data.getData();
@@ -70,51 +116,54 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void btnSignupclick (View v )
-    {
-        String str;
+        {
+        String Gender;
         EditText txtFname = (EditText) findViewById(R.id.txtfirstname);
         EditText txtLname = (EditText) findViewById(R.id.txtlastname);
-        CheckBox chmale = (CheckBox) findViewById(R.id.checkmale);
-        CheckBox chfemale = (CheckBox) findViewById(R.id.checkfemale);
+       // RadioButton chmale = (RadioButton) findViewById(R.id.chmale);
+    //    RadioButton chfemale = (RadioButton) findViewById(R.id.chfemale);
         EditText txtnumber = (EditText) findViewById(R.id.txtphonenumber);
         EditText txtmail = (EditText) findViewById(R.id.txtEmail);
         EditText txtmsg = (EditText) findViewById(R.id.txtmsg);
 
-        if (chmale.isChecked())
-        {
-            str = "male";
-        }
-        else
-        {
-            str="female";
-        }
+    //    if (chmale.isChecked())
+    //    {Gender = "male";
+       // } else{Gender="female";}
 
-        Intent myintent = new Intent();
-        myintent.setAction(Intent.ACTION_SEND);
-        myintent.putExtra(Intent.EXTRA_EMAIL, new String[] {"zamel@example.com"});
+        Intent myintent = new Intent(this,Main2Activity.class);
+        myintent.putExtra("first name",txtFname.getText().toString());
+        myintent.putExtra("last name",txtLname.getText().toString());
+        myintent.putExtra("my number",txtnumber.getText().toString());
+        //myintent.putExtra("male",txtFname.getText().toString());
+       // myintent.putExtra("female",txtFname.getText().toString());
+        myintent.putExtra("mail",txtmail.getText().toString());
+        myintent.putExtra("msg",txtmsg.getText().toString());
+     //   myintent.putExtra("Gender",txt.getText().toString());
 
-        myintent.putExtra(Intent.EXTRA_TEXT,
-                " Heey my name is " +
-                txtFname.getText().toString() + " " +
-                txtLname.getText().toString() +"\n"+
-                " and my phone number is: " + txtnumber.getText().toString() + " " +
-                "u can talk to me on whatsapp, " +"\n"+
-                " Email: " + txtmail.getText().toString() + "\n"+
-                " for sure i am "+str.toString() + "\n" +
-                        "_____________"+ "\n" +
-                "this is my message to you mr zamel : "+"\n"
-                + txtmsg.getText().toString());
-        myintent.setType("text/plain");
-        myintent.setPackage("com.google.android.gm");
         startActivity(myintent);
-
 
     }
 
     public void btnNumberClick (View v )
     {
         EditText txt = (EditText) findViewById(R.id.txtphonenumber);
-        startActivity(new Intent(Intent.ACTION_DIAL,Uri.parse("tel:"+txt.getText())));
+
+
+        if (! txt.getText().toString().startsWith("01") )
+        {
+            txt.setText("invalid");
+        }
+
+        if(txt.getText().length() != 11)
+        {
+            txt.setHint("invalid");
+        }
+
+        else
+        {
+            startActivity(new Intent(Intent.ACTION_DIAL,Uri.parse("tel:"+txt.getText())));
+        }
+
     }
 
     public void btnSendClick (View v )
@@ -128,6 +177,25 @@ public class MainActivity extends AppCompatActivity {
         emailIntent.putExtra(Intent.EXTRA_TEXT, "Email message text");
         emailIntent.putExtra(Intent.EXTRA_STREAM, Uri.parse("content://path/to/email/attachment"));
         emailIntent.setPackage("com.google.android.gm");
-        startActivity(emailIntent);
+
+
+        if(txt.getText().toString().endsWith("@gmail.com"))
+        {
+            startActivity(emailIntent);
+        }
+        else
+        {
+            Toast.makeText(getApplicationContext(),"invalid email",Toast.LENGTH_LONG).show();
+        }
     }
+
+    public void btnClickContacts(View v)
+    {
+        Intent intent = new Intent(Intent.ACTION_PICK, ContactsContract.Contacts.CONTENT_URI);
+        startActivityForResult(intent, PICK_CONTACT);
+    }
+
+
+
+
 }
